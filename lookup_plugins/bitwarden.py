@@ -67,7 +67,7 @@ RETURN = """
 class Bitwarden(object):
     def __init__(self, path):
         self._cli_path = path
-        self._bw_session = ""
+        self._bw_session = ''
         try:
             check_output([self._cli_path, "--version"])
         except OSError:
@@ -127,9 +127,10 @@ class Bitwarden(object):
 
     def status(self):
         try:
-            data = json.loads(self._run(['status']))
+            status = self._run(['status'])
+            data = json.loads(status)
         except json.decoder.JSONDecodeError as e:
-            raise AnsibleError("Error decoding Bitwarden status: %s" % e)
+            raise AnsibleError("Error decoding Bitwarden status: '{}', original response '{}'".format(e, status))
         return data['status']
 
     def get_entry(self, key, field):
@@ -154,6 +155,9 @@ class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):
         bw = Bitwarden(path=kwargs.get('path', 'bw'))
 
+        if kwargs.get('session'):
+            bw.session = kwargs.get('session')
+
         if not bw.logged_in:
             raise AnsibleError("Not logged into Bitwarden: please run "
                                "'bw login', or 'bw unlock' and set the "
@@ -164,8 +168,6 @@ class LookupModule(LookupBase):
 
         if kwargs.get('sync'):
             bw.sync()
-        if kwargs.get('session'):
-            bw.session = kwargs.get('session')
 
         for term in terms:
             if kwargs.get('custom_field'):
